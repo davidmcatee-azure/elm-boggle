@@ -1,12 +1,12 @@
 {
-  "name": "elm-webpack-starter",
-  "description": "Webpack setup for writing Elm apps",
-  "version": "0.8.4",
+  "name": "elm-boggle",
+  "description": "A Boggle clone written in Elm",
+  "version": "0.0.1",
   "license": "MIT",
-  "author": "Peter Morawiec",
+  "author": "David McAtee",
   "repository": {
     "type": "git",
-    "url": "https://github.com/moarwick/elm-webpack-starter"
+    "url": "https://github.com/davidmcatee_azure/elm-boggle"
   },
   "scripts": {
     "start": "webpack-dev-server --hot --inline",
@@ -15,7 +15,6 @@
   },
   "devDependencies": {
     "autoprefixer": "^6.3.6",
-    "bootstrap-sass": "^3.3.6",
     "copy-webpack-plugin": "^4.0.1",
     "css-loader": "^0.26.1",
     "elm": "^0.18.0",
@@ -24,7 +23,6 @@
     "extract-text-webpack-plugin": "^1.0.1",
     "file-loader": "^0.9.0",
     "html-webpack-plugin": "^2.17.0",
-    "jquery": "^3.1.0",
     "node-sass": "^4.2.0",
     "postcss-loader": "^1.1.1",
     "rimraf": "^2.5.2",
