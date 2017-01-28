@@ -1,0 +1,68 @@
+html,
+body {
+    margin: 0;
+    padding: 0;
+}
+
+.Shuffle {
+    text-align: center;
+    margin: 40px;
+}
+
+.Shuffle-btn {
+    cursor: pointer;
+    background-color: #0a89ff;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.26);
+    height: 60px;
+    color: #fff;
+    font-size: 18px;
+    font-weight: bold;
+    border: none;
+    width: 150px;
+    &:hover, &:focus {
+        background-color: lighten(#0a89ff, 5);
+    }
+}
+
+.Board {
+    background-color: #ff9e00;
+    display: flex;
+    flex-direction: column;
+    width: 8.3em;
+    height: 8.3em;
+    padding: .0625em;
+    border: .04167em solid darken(#ff9e00, 10);
+    border-radius: .2em;
+    margin-left: auto;
+    margin-right: auto;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 48px;
+    letter-spacing: -.025em;
+    font-weight: 600;
+    justify-content: center;
+}
+
+.Board-row {
+    display: flex;
+    flex-grow: 1;
+}
+
+.Board-tile {
+    background-color: #fff;
+    border-radius: .167em;
+    border: .04167em solid darken(#fff, 40);
+    margin: .0625em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    min-width: 1.8em;
+    min-height: 1.8em;
+    flex-grow: 1;
+    .Board--empty & {
+        border-color: #000;
+        background-color: #333;
+        opacity: 0.25;
+    }
+}

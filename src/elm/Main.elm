@@ -1,63 +1,185 @@
 module Main exposing (..)
+
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.Events exposing ( onClick )
-
--- component import example
-import Components.Hello exposing ( hello )
+import Html.Events exposing (onClick)
+import Array exposing (..)
+import Random exposing (..)
+import Random.List exposing (..)
+import Random.Extra exposing (..)
 
 
 -- APP
-main : Program Never Int Msg
+
+
+main : Program Never Model Msg
 main =
-  Html.beginnerProgram { model = model, view = view, update = update }
+    Html.program
+        { init = ( initModel, Cmd.none )
+        , view = view
+        , update = update
+        , subscriptions = subscriptions
+        }
+
 
 
 -- MODEL
-type alias Model = Int
 
-model : number
-model = 0
+
+type alias Die =
+    List String
+
+
+type alias Dice =
+    List Die
+
+
+{-| source for letter distribution:
+    http://www.bananagrammer.com/2013/10/the-boggle-cube-redesign-and-its-effect.html
+-}
+dice : Dice
+dice =
+    [ [ "A", "A", "E", "E", "G", "N" ]
+    , [ "A", "B", "B", "J", "O", "O" ]
+    , [ "A", "C", "H", "O", "P", "S" ]
+    , [ "A", "F", "F", "K", "P", "S" ]
+    , [ "A", "O", "O", "T", "T", "W" ]
+    , [ "C", "I", "M", "O", "T", "U" ]
+    , [ "D", "E", "I", "L", "R", "X" ]
+    , [ "D", "E", "L", "R", "V", "Y" ]
+    , [ "D", "I", "S", "T", "T", "Y" ]
+    , [ "E", "E", "G", "H", "N", "W" ]
+    , [ "E", "E", "I", "N", "S", "U" ]
+    , [ "E", "H", "R", "T", "V", "W" ]
+    , [ "E", "I", "O", "S", "S", "T" ]
+    , [ "E", "L", "R", "T", "T", "Y" ]
+    , [ "H", "I", "M", "N", "U", "Qu" ]
+    , [ "H", "L", "N", "N", "R", "Z" ]
+    ]
+
+
+type alias Model =
+    { board : Maybe Board
+    }
+
+
+type alias Board =
+    Array Row
+
+
+type alias Row =
+    Array String
+
+
+
+-- type alias Position =
+--     ( Int, Int )
+
+
+emptyBoard : Board
+emptyBoard =
+    Array.repeat 4 ""
+        |> Array.repeat 4
+
+
+initModel : Model
+initModel =
+    { board = Nothing
+    }
+
 
 
 -- UPDATE
-type Msg = NoOp | Increment
 
-update : Msg -> Model -> Model
+
+splitListToArrays : Int -> List a -> List (Array a)
+splitListToArrays n listRemainder =
+    if List.length listRemainder > n then
+        fromList (List.take n listRemainder) :: (List.drop n listRemainder |> splitListToArrays n)
+    else
+        [ fromList listRemainder ]
+
+
+sampleDie : Die -> Generator String
+sampleDie die =
+    sample die |> Random.map (Maybe.withDefault "")
+
+
+sampleDice : Dice -> List (Generator String)
+sampleDice =
+    List.map sampleDie
+
+
+randomBoard : Generator Board
+randomBoard =
+    (combine << sampleDice) dice
+        |> andThen shuffle
+        |> Random.map (fromList << splitListToArrays 4)
+
+
+type Msg
+    = GenerateBoard
+    | BoardGenerated Board
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-  case msg of
-    NoOp -> model
-    Increment -> model + 1
+    case msg of
+        GenerateBoard ->
+            ( model, generate BoardGenerated randomBoard )
+
+        BoardGenerated board ->
+            ( { model | board = Just board }, Cmd.none )
+
 
 
 -- VIEW
--- Html is defined as: elem [ attribs ][ children ]
--- CSS can be applied via class names or inline style attrib
+
+
+tileView : String -> Html Msg
+tileView str =
+    span [ class "Board-tile" ] [ text str ]
+
+
+rowView : Row -> Html Msg
+rowView row =
+    div [ class "Board-row" ]
+        (Array.map tileView row |> Array.toList)
+
+
+boardView : Maybe Board -> Html Msg
+boardView maybeBoard =
+    let
+        ( className, board ) =
+            case maybeBoard of
+                Nothing ->
+                    ( "Board Board--empty", emptyBoard )
+
+                Just board ->
+                    ( "Board", board )
+    in
+        div [ class className ]
+            (Array.map rowView board |> Array.toList)
+
+
+shuffleView : Html Msg
+shuffleView =
+    div [ class "Shuffle" ]
+        [ button [ type_ "button", class "Shuffle-btn", onClick GenerateBoard ] [ text "Shuffle" ] ]
+
+
 view : Model -> Html Msg
 view model =
-  div [ class "container", style [("margin-top", "30px"), ( "text-align", "center" )] ][    -- inline CSS (literal)
-    div [ class "row" ][
-      div [ class "col-xs-12" ][
-        div [ class "jumbotron" ][
-          img [ src "static/img/elm.jpg", style styles.img ] []                             -- inline CSS (via var)
-          , hello model                                                                     -- ext 'hello' component (takes 'model' as arg)
-          , p [] [ text ( "Elm Webpack Starter" ) ]
-          , button [ class "btn btn-primary btn-lg", onClick Increment ] [                  -- click handler
-            span[ class "glyphicon glyphicon-star" ][]                                      -- glyphicon
-            , span[][ text "FTW!" ]
-          ]
+    div []
+        [ shuffleView
+        , boardView model.board
         ]
-      ]
-    ]
-  ]
 
 
--- CSS STYLES
-styles : { img : List ( String, String ) }
-styles =
-  {
-    img =
-      [ ( "width", "33%" )
-      , ( "border", "4px solid #337AB7")
-      ]
-  }
+
+-- SUBSCRIPTIONS
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.none
