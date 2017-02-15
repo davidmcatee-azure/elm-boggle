@@ -1,0 +1,124 @@
+.Game {
+    background-color: #eee;
+    display: flex;
+    justify-content: center;
+}
+
+.AboveBoard {
+    text-align: center;
+    margin-top:3rem;
+}
+
+.ShuffleBtn {
+    cursor: pointer;
+    background-color: #0a89ff;
+    border-radius: .15em;
+    box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.26);
+    color: #fff;
+    font-size: 1.8rem;
+    font-weight: bold;
+    border: none;
+    padding: 1em 2em;
+    &:hover,
+    &:focus {
+        background-color: lighten(#0a89ff, 5);
+    }
+}
+
+.Board {
+    background-color: #ff9e00;
+    display: inline-block;
+    padding: .1em;
+    border: .06667em solid darken(#ff9e00, 10);
+    border-radius: .32em;
+    font-family:  Arial, Helvetica, sans-serif;
+    font-size: 4.8rem;
+    //letter-spacing: -.04em;
+    font-weight: 600;
+    margin: 4rem;
+}
+
+.Board-row {
+    display: flex;
+    flex-grow: 1;
+}
+
+.Board-tile {
+    background-color: #fff;
+    border-radius: .167em;
+    border: .04167em solid darken(#fff, 40);
+    margin: .0625em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    min-width: 1.75em;
+    min-height: 1.75em;
+    flex-grow: 1;
+    .Board--empty & {
+        border-color: #000;
+        background-color: #333;
+        opacity: 0.25;
+    }
+}
+
+.Board-tile--multi {
+    letter-spacing: -.04em;
+}
+
+.BelowBoard {
+    text-align: center;
+}
+
+.InputWord {
+    font-size: 2.4rem;
+    padding: .2em;
+    text-align: center;
+    width: 12em;
+    text-transform: lowercase;
+    letter-spacing: .04em;
+    font-family: 'Roboto Mono', Courier, monospace;
+}
+
+.Words {
+    font-size: 1.4rem;
+    width: 10em;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding: 3rem 0;
+    margin-left:2rem;
+}
+
+.Words-header {
+    color: #555;
+    line-height: 2em;
+    border: 1px solid #d3d3d3;
+    padding: 0 .5em;
+    background-color: #f7f7f7;
+}
+
+.Words-list {
+    padding-top: .25em;
+    font-family: 'Roboto Mono', Courier, monospace;
+    border: 1px solid #d3d3d3;
+    border-top: none;
+    background-color: #fff;
+    overflow: auto;
+    & + .Words-header {
+        border-top:none;
+    }
+    flex-grow: 12;
+    color: #333;
+}
+
+.Words-list--notFound {
+    flex-grow: 1;
+    color: #999;
+}
+
+.Words-listItem {
+    padding: 0 .5em;
+    margin-bottom: .25em;
+}
+

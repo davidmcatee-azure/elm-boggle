@@ -1,7 +1,7 @@
 {
   "name": "elm-boggle",
   "description": "A Boggle clone written in Elm",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "license": "MIT",
   "author": "David McAtee",
   "repository": {
