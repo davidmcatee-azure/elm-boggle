@@ -108,13 +108,18 @@
     & + .Words-header {
         border-top:none;
     }
-    flex-grow: 12;
+    flex-grow: 50;
+    min-height:2.8em;
     color: #333;
 }
 
 .Words-list--notFound {
     flex-grow: 1;
     color: #999;
+}
+.Words-list--invalid {
+    flex-grow: 1;
+    color: desaturate(red, 50%);
 }
 
 .Words-listItem {

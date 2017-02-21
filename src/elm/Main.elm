@@ -5,6 +5,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Html.Lazy exposing (..)
+import Http
 import Array exposing (..)
 import Random exposing (..)
 import Random.List exposing (..)
@@ -14,6 +15,8 @@ import Debug exposing (..)
 import Maybe.Extra exposing (isJust)
 import Regex exposing (..)
 import Task
+import Dict exposing (..)
+import RemoteData exposing (..)
 
 
 -- APP
@@ -22,7 +25,7 @@ import Task
 main : Program Never Model Msg
 main =
     Html.program
-        { init = ( initModel, Cmd.none )
+        { init = ( initModel, getDictionary )
         , view = view
         , update = update
         , subscriptions = subscriptions
@@ -38,7 +41,9 @@ type alias Model =
     , board : Maybe Board
     , words : List String
     , wordsNotFound : List String
+    , wordsInvalid : List String
     , inputWord : String
+    , dictionary : WebData (Dict String String)
     }
 
 
@@ -74,7 +79,9 @@ initModel =
     , board = Nothing
     , words = []
     , wordsNotFound = []
+    , wordsInvalid = []
     , inputWord = ""
+    , dictionary = Loading
     }
 
 
@@ -173,6 +180,7 @@ type Msg
     | BoardGenerated Board
     | InputWord String
     | AddInputWord
+    | DictionaryResponse (WebData (Dict String String))
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -190,6 +198,7 @@ update msg model =
                 | board = Just board
                 , words = []
                 , wordsNotFound = []
+                , wordsInvalid = []
                 , inputWord = ""
             }
                 ! [ Dom.focus "inputWord" |> taskIgnoreResult ]
@@ -200,6 +209,10 @@ update msg model =
 
         AddInputWord ->
             addInputWord model ! []
+
+        DictionaryResponse response ->
+            { model | dictionary = response }
+                ! []
 
 
 randomBoard : BoggleVersion -> Generator Board
@@ -212,8 +225,8 @@ randomBoard boggleVersion =
             sqrtListLength dice
     in
         (combine << sampleDice) dice
-            |> andThen shuffle
-            |> Random.map (fromList << splitListToArrays boardLength)
+            |> Random.andThen shuffle
+            |> Random.map (Array.fromList << splitListToArrays boardLength)
 
 
 sqrtListLength : List a -> Int
@@ -234,9 +247,9 @@ sampleDie die =
 splitListToArrays : Int -> List a -> List (Array a)
 splitListToArrays n listRemainder =
     if List.length listRemainder > n then
-        fromList (List.take n listRemainder) :: (List.drop n listRemainder |> splitListToArrays n)
+        Array.fromList (List.take n listRemainder) :: (List.drop n listRemainder |> splitListToArrays n)
     else
-        [ fromList listRemainder ]
+        [ Array.fromList listRemainder ]
 
 
 addInputWord : Model -> Model
@@ -247,18 +260,25 @@ addInputWord model =
         case model.board of
             Just board ->
                 let
-                    ( updatedWords, updatedWordsNotFound ) =
-                        if List.member model.inputWord model.words || List.member model.inputWord model.wordsNotFound then
-                            ( model.words, model.wordsNotFound )
+                    dictionary =
+                        RemoteData.withDefault Dict.empty model.dictionary
+
+                    ( updatedWords, updatedWordsNotFound, updatedwordsInvalid ) =
+                        if List.member model.inputWord model.words || List.member model.inputWord model.wordsNotFound || List.member model.inputWord model.wordsInvalid then
+                            ( model.words, model.wordsNotFound, model.wordsInvalid )
                         else if isWordOnBoard model.inputWord board then
-                            ( model.inputWord :: model.words, model.wordsNotFound )
+                            if isWordInDictionary model.inputWord dictionary then
+                                ( model.inputWord :: model.words, model.wordsNotFound, model.wordsInvalid )
+                            else
+                                ( model.words, model.wordsNotFound, model.inputWord :: model.wordsInvalid )
                         else
-                            ( model.words, model.inputWord :: model.wordsNotFound )
+                            ( model.words, model.inputWord :: model.wordsNotFound, model.wordsInvalid )
                 in
                     { model
                         | inputWord = ""
                         , words = updatedWords
                         , wordsNotFound = updatedWordsNotFound
+                        , wordsInvalid = updatedwordsInvalid
                     }
 
             Nothing ->
@@ -364,6 +384,49 @@ stripSpaces =
     replace All (regex "\\s") (\_ -> "")
 
 
+getDictionary : Cmd Msg
+getDictionary =
+    Http.get "static/ospd4.json" (Json.dict Json.string)
+        |> RemoteData.sendRequest
+        |> Cmd.map DictionaryResponse
+
+
+isWordInDictionary : String -> Dict String String -> Bool
+isWordInDictionary word dictionary =
+    let
+        wordLength =
+            String.length word
+
+        wordsOfSameLength =
+            Dict.get (toString wordLength) dictionary |> Maybe.withDefault ""
+
+        wordCount =
+            (String.length wordsOfSameLength) // wordLength
+
+        binaryWordSearch : Int -> Int -> Bool
+        binaryWordSearch lowWordNumber highWordNumber =
+            let
+                midWordNumber =
+                    (lowWordNumber + highWordNumber) // 2
+
+                midWordIndex =
+                    midWordNumber * wordLength
+
+                midWord =
+                    String.slice midWordIndex (midWordIndex + wordLength) wordsOfSameLength
+            in
+                if midWord == word then
+                    True
+                else if highWordNumber <= lowWordNumber then
+                    False
+                else if word < midWord then
+                    binaryWordSearch lowWordNumber (midWordNumber - 1)
+                else
+                    binaryWordSearch (midWordNumber + 1) highWordNumber
+    in
+        binaryWordSearch 0 (wordCount - 1)
+
+
 
 -- VIEW
 
@@ -456,34 +519,48 @@ wordListsView model =
                 ]
             ]
 
-        invalidWords =
+        wordsNotFound =
             if List.isEmpty model.wordsNotFound then
                 []
             else
                 [ List.length model.wordsNotFound
-                    |> pluralize "{} word not found" "{} words not found"
+                    |> insertInt "{} not found"
                     |> wordsHeader
                 , div [ class "Words-list Words-list--notFound" ]
                     [ ul []
                         (List.map wordListItem model.wordsNotFound)
                     ]
                 ]
+
+        wordsInvalid =
+            if List.isEmpty model.wordsInvalid then
+                []
+            else
+                [ List.length model.wordsInvalid
+                    |> insertInt "{} invalid"
+                    |> wordsHeader
+                , div [ class "Words-list Words-list--invalid" ]
+                    [ ul []
+                        (List.map wordListItem model.wordsInvalid)
+                    ]
+                ]
     in
-        List.append words invalidWords
+        List.concat [ words, wordsNotFound, wordsInvalid ]
+
+
+insertInt : String -> Int -> String
+insertInt str int =
+    replace All (regex "{}") (\_ -> toString int) str
 
 
 pluralize : String -> String -> Int -> String
 pluralize one other count =
-    let
-        insertCount =
-            replace All (regex "{}") (\_ -> toString count)
-    in
-        case count of
-            1 ->
-                insertCount one
+    case count of
+        1 ->
+            insertInt one count
 
-            _ ->
-                insertCount other
+        _ ->
+            insertInt other count
 
 
 wordsHeader : String -> Html Msg

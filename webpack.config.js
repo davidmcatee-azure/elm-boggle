@@ -20,7 +20,7 @@ var commonConfig = {
 
   output: {
     path: outputPath,
-    filename: `/static/js/${outputFilename}`,
+    filename: `static/js/${outputFilename}`,
     // publicPath: '/'
   },
 
@@ -126,12 +126,16 @@ if (TARGET_ENV === 'production') {
         {
           from: 'src/favicon.ico'
         },
+        {
+          from: 'src/static/ospd4.json',
+          to: 'static/ospd4.json'
+        }
       ]),
 
       new webpack.optimize.OccurenceOrderPlugin(),
 
       // extract CSS into a separate file
-      new ExtractTextPlugin('/static/css/[name]-[hash].css', {
+      new ExtractTextPlugin('static/css/[name]-[hash].css', {
         allChunks: true
       }),
 
